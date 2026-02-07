@@ -1,0 +1,10 @@
+fastapi
+uvicorn
+yfinance
+pandas
+numpy
+scikit-learn
+tensorflow-cpu
+huggingface_hub
+joblib
+pyzmq==26.2.0

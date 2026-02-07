@@ -1,0 +1,21 @@
+{
+  "nodes": [
+    {
+      "id": "ccp-1",
+      "type": "custom",
+      "position": {
+        "x": 400,
+        "y": 300
+      },
+      "data": {
+        "label": "CCP-1",
+        "type": "CCP",
+        "details": "Central Clearing House",
+        "isUnconnected": true
+      },
+      "width": 80,
+      "height": 80
+    }
+  ],
+  "edges": []
+}

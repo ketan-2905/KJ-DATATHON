@@ -4,8 +4,8 @@
       "id": "ccp-1",
       "type": "custom",
       "position": {
-        "x": 363.7415355288774,
-        "y": 156.18886570807973
+        "x": 317.18604083367825,
+        "y": 69.08503692351356
       },
       "data": {
         "label": "CCP-1",
@@ -17,8 +17,8 @@
       "height": 80,
       "selected": false,
       "positionAbsolute": {
-        "x": 363.7415355288774,
-        "y": 156.18886570807973
+        "x": 317.18604083367825,
+        "y": 69.08503692351356
       },
       "dragging": false
     },
@@ -37,7 +37,7 @@
       },
       "width": 80,
       "height": 80,
-      "selected": false,
+      "selected": true,
       "positionAbsolute": {
         "x": 366.5599449489905,
         "y": -218.05780239123604
@@ -81,10 +81,32 @@
       },
       "width": 80,
       "height": 80,
-      "selected": true,
+      "selected": false,
       "positionAbsolute": {
         "x": -137.0106350061443,
         "y": 145.110097731753
+      },
+      "dragging": false
+    },
+    {
+      "id": "TCS.NS",
+      "type": "custom",
+      "position": {
+        "x": 536.6092181268948,
+        "y": -106.23022772677952
+      },
+      "data": {
+        "label": "TATA CONSULTANCY SERV LT",
+        "type": "Financial Institution",
+        "details": "NSI - TCS.NS",
+        "isUnconnected": false
+      },
+      "width": 80,
+      "height": 80,
+      "selected": false,
+      "positionAbsolute": {
+        "x": 536.6092181268948,
+        "y": -106.23022772677952
       },
       "dragging": false
     }
@@ -154,6 +176,19 @@
         "strokeWidth": 2
       },
       "id": "reactflow__edge-RS-IBN"
+    },
+    {
+      "id": "e-TCS.NS-ccp-1",
+      "source": "TCS.NS",
+      "target": "ccp-1",
+      "type": "custom",
+      "sourceHandle": "center",
+      "targetHandle": "center",
+      "animated": true,
+      "style": {
+        "stroke": "#94a3b8",
+        "strokeWidth": 2
+      }
     }
   ]
 }

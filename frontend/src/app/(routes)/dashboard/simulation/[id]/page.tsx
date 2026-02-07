@@ -21,8 +21,31 @@ import ReactFlow, {
     useReactFlow
 } from 'reactflow';
 import 'reactflow/dist/style.css';
-import { Network, Plus, Trash2, Send, Save, Activity, Search, X } from 'lucide-react';
+import { Network, Plus, Trash2, Send, Save, Activity, Search, X, Play, Loader2, TrendingUp, AlertTriangle } from 'lucide-react';
 import { useParams } from 'next/navigation';
+
+// --- Types ---
+interface CCPFunds {
+    initial_margin: number;
+    variation_margin_flow: number;
+    default_fund: number;
+    ccp_capital: number;
+    units: string;
+    vm_is_flow: boolean;
+}
+
+interface PredictionResult {
+    predicted_next_systemic_risk: number;
+    latest_S_t: number;
+    latest_features: Record<string, number>;
+    used_tickers: string[];
+    masked_tickers: string[];
+    end_date: string;
+    ccp_funds: CCPFunds;
+}
+
+// --- API URL ---
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8001';
 
 // --- CUSTOM EDGE WITH DELETE BUTTON ---
 const CustomEdge = ({
@@ -72,7 +95,6 @@ const CustomEdge = ({
                     >
                         ×
                     </button>
-                    {/* Invisible hover area to make it easier to trigger the button visibility */}
                     <div className="absolute inset-0 w-8 h-8 -translate-x-1/2 -translate-y-1/2 rounded-full cursor-pointer hover:bg-slate-500/10 group-hover:bg-transparent -z-10" />
                 </div>
             </EdgeLabelRenderer>
@@ -97,40 +119,11 @@ const FinancialNode = ({ data, id }: NodeProps) => {
                 </span>
             </div>
 
-            {/* center handle (target) - existing */}
-            <Handle
-                type="target"
-                position={Position.Top}
-                className="opacity-0 w-1 h-1"
-                style={{ top: '50%', left: '50%', transform: 'translate(-50%, -50%)', pointerEvents: 'none' }} // Visible handle is below
-                id="center"
-            />
+            <Handle type="target" position={Position.Top} className="opacity-0 w-1 h-1" style={{ top: '50%', left: '50%', transform: 'translate(-50%, -50%)', pointerEvents: 'none' }} id="center" />
+            <Handle type="source" position={Position.Top} className="opacity-0 w-1 h-1" style={{ top: '50%', left: '50%', transform: 'translate(-50%, -50%)', pointerEvents: 'none' }} id="center" />
+            <Handle type="source" position={Position.Bottom} className="w-3 h-3 bg-slate-300 hover:bg-indigo-500 border border-white transition-all z-20 opacity-0 group-hover/node:opacity-100" style={{ bottom: -6 }} />
+            <Handle type="source" position={Position.Top} className="w-3 h-3 bg-slate-300 hover:bg-indigo-500 border border-white transition-all z-20 opacity-0 group-hover/node:opacity-100" style={{ top: -6 }} />
 
-            {/* NEW: center handle (source) - ensuring center-to-center connections work both ways */}
-            <Handle
-                type="source"
-                position={Position.Top}
-                className="opacity-0 w-1 h-1"
-                style={{ top: '50%', left: '50%', transform: 'translate(-50%, -50%)', pointerEvents: 'none' }}
-                id="center"
-            />
-
-
-            {/* Interaction Handles: Visible ONLY on Hover (Visual guide, but we will force connection to 'center') */}
-            <Handle
-                type="source"
-                position={Position.Bottom}
-                className="w-3 h-3 bg-slate-300 hover:bg-indigo-500 border border-white transition-all z-20 opacity-0 group-hover/node:opacity-100"
-                style={{ bottom: -6 }}
-            />
-            <Handle
-                type="source"
-                position={Position.Top}
-                className="w-3 h-3 bg-slate-300 hover:bg-indigo-500 border border-white transition-all z-20 opacity-0 group-hover/node:opacity-100"
-                style={{ top: -6 }}
-            />
-
-            {/* Tooltip */}
             <div className="absolute top-full left-1/2 -translate-x-1/2 mt-3 w-40 p-3 bg-white/90 backdrop-blur-md rounded-xl border border-slate-100 shadow-xl opacity-0 invisible group-hover/node:opacity-100 group-hover/node:visible transition-all duration-300 z-50 pointer-events-none transform translate-y-2 group-hover/node:translate-y-0 text-center">
                 <span className="text-[10px] font-bold text-indigo-500 uppercase tracking-widest block mb-1">{data.type}</span>
                 <h3 className="font-bold text-slate-800 text-sm mb-1">{data.label}</h3>
@@ -152,6 +145,11 @@ export default function SimulationWorkspace() {
     const [messages, setMessages] = useState<{ role: 'user' | 'ai', content: string }[]>([]);
     const [isLoading, setIsLoading] = useState(false);
 
+    // Prediction State
+    const [prediction, setPrediction] = useState<PredictionResult | null>(null);
+    const [predictionLoading, setPredictionLoading] = useState(false);
+    const [predictionError, setPredictionError] = useState<string | null>(null);
+
     // Search State
     const [isSearchOpen, setIsSearchOpen] = useState(false);
     const [searchQuery, setSearchQuery] = useState("");
@@ -167,7 +165,6 @@ export default function SimulationWorkspace() {
                 if (res.ok) {
                     const data = await res.json();
                     setNodes(data.nodes || []);
-                    // Ensure loaded edges use custom type
                     const loadedEdges = (data.edges || []).map((e: any) => ({ ...e, type: 'custom' }));
                     setEdges(loadedEdges);
                 }
@@ -176,7 +173,7 @@ export default function SimulationWorkspace() {
             }
         };
         fetchSimulation();
-    }, [simulationId, setNodes, setEdges]); // eslint-disable-line
+    }, [simulationId, setNodes, setEdges]);
 
     // Save Simulation Data
     const saveSimulation = async () => {
@@ -199,9 +196,9 @@ export default function SimulationWorkspace() {
             const timer = setTimeout(saveSimulation, 2000);
             return () => clearTimeout(timer);
         }
-    }, [nodes, edges]); // eslint-disable-line
+    }, [nodes, edges]);
 
-    // Check for unconnected nodes to update styling
+    // Check for unconnected nodes
     useEffect(() => {
         setNodes((nds) => nds.map((node) => {
             const isConnected = edges.some(e => e.source === node.id || e.target === node.id);
@@ -212,6 +209,51 @@ export default function SimulationWorkspace() {
         }));
     }, [edges, setNodes]);
 
+    // Get tickers from nodes for API call
+    const getTickersFromNodes = (): string[] => {
+        return nodes
+            .filter(n => n.data.type !== 'CCP' && n.data.details)
+            .map(n => {
+                // Extract ticker from details like "NSE - RELIANCE.NS"
+                const match = n.data.details?.match(/([A-Z]+\.NS)/);
+                return match ? match[1] : null;
+            })
+            .filter((t): t is string => t !== null);
+    };
+
+    // Run Prediction API call
+    const runPrediction = async () => {
+        const tickers = getTickersFromNodes();
+
+        if (tickers.length === 0) {
+            setPredictionError('No valid tickers found. Add institutions with NSE tickers.');
+            return;
+        }
+
+        setPredictionLoading(true);
+        setPredictionError(null);
+
+        try {
+            const response = await fetch(`${API_URL}/predict`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ tickers })
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.detail || 'Prediction failed');
+            }
+
+            const result: PredictionResult = await response.json();
+            setPrediction(result);
+
+        } catch (err) {
+            setPredictionError(err instanceof Error ? err.message : 'An error occurred');
+        } finally {
+            setPredictionLoading(false);
+        }
+    };
 
     // Handle Chat
     const handleSend = async () => {
@@ -241,7 +283,6 @@ export default function SimulationWorkspace() {
                     ...n,
                     id: n.id || `node-${Date.now()}-${Math.random()}`
                 }));
-                // Prevent duplicates
                 setNodes((nds) => {
                     const existingIds = new Set(nds.map(n => n.id));
                     const uniqueNewNodes = newNodes.filter((n: any) => !existingIds.has(n.id));
@@ -253,7 +294,7 @@ export default function SimulationWorkspace() {
                 setEdges((eds) => {
                     const existingIds = new Set(eds.map(e => e.id));
                     const uniqueNewEdges = action.edgesToAdd.filter((e: any) => !existingIds.has(e.id))
-                        .map((e: any) => ({ ...e, type: 'custom' })); // Ensure custom type
+                        .map((e: any) => ({ ...e, type: 'custom' }));
                     return [...eds, ...uniqueNewEdges];
                 });
             }
@@ -288,7 +329,6 @@ export default function SimulationWorkspace() {
 
         setIsSearching(true);
         try {
-            // Use our proxy API
             const res = await fetch(`/api/finance/search?q=${val}`);
             if (res.ok) {
                 const data = await res.json();
@@ -304,9 +344,8 @@ export default function SimulationWorkspace() {
     // ADD INSTITUTION NODE
     const addInstitution = (item: any) => {
         const id = item.id || `bank-${Date.now()}`;
-        // Random position "NEAR" center as requested (reduced radius 100-150)
         const angle = Math.random() * Math.PI * 2;
-        const radius = 120 + Math.random() * 60; // Was 250+50
+        const radius = 120 + Math.random() * 60;
         const x = 400 + Math.cos(angle) * radius;
         const y = 300 + Math.sin(angle) * radius;
 
@@ -318,19 +357,18 @@ export default function SimulationWorkspace() {
                 label: item.name,
                 type: 'Financial Institution',
                 details: `${item.exchange} - ${item.ticker}`,
-                isUnconnected: false // Will be connected
+                isUnconnected: false
             }
         };
 
-        // Find CCP to connect to
         const ccp = nodes.find(n => n.data.type === 'CCP');
         const newEdge: Edge | null = ccp ? {
             id: `e-${id}-${ccp.id}`,
             source: id,
             target: ccp.id,
-            type: 'custom', // Use custom edge
-            sourceHandle: 'center', // STRICTLY CONNECT FROM CENTER
-            targetHandle: 'center', // STRICTLY CONNECT TO CENTER
+            type: 'custom',
+            sourceHandle: 'center',
+            targetHandle: 'center',
             animated: true,
             style: { stroke: '#94a3b8', strokeWidth: 2 }
         } : null;
@@ -340,7 +378,6 @@ export default function SimulationWorkspace() {
             setEdges((eds) => eds.concat(newEdge));
         }
 
-        // Reset Search
         setSearchQuery("");
         setSearchResults([]);
         setIsSearchOpen(false);
@@ -349,7 +386,6 @@ export default function SimulationWorkspace() {
     // HANDLE CONNECTIONS
     const onConnect = useCallback((params: Connection) => {
         setEdges((eds) => {
-            // 1. Prevent Double Links (source->target OR target->source)
             const exists = eds.some(e =>
                 (e.source === params.source && e.target === params.target) ||
                 (e.source === params.target && e.target === params.source)
@@ -357,32 +393,27 @@ export default function SimulationWorkspace() {
 
             if (exists) return eds;
 
-
             const sourceNode = nodes.find(n => n.id === params.source);
             const targetNode = nodes.find(n => n.id === params.target);
 
             const isSourceCCP = sourceNode?.data.type === 'CCP';
             const isTargetCCP = targetNode?.data.type === 'CCP';
 
-            // Logic: CCP to Bank (or vice versa) -> Gray
-            // Bank to Bank -> Blue
-            let edgeColor = '#3b82f6'; // Default Blue (bank-to-bank)
+            let edgeColor = '#3b82f6';
             if (isSourceCCP || isTargetCCP) {
-                edgeColor = '#94a3b8'; // Gray
+                edgeColor = '#94a3b8';
             }
 
             return addEdge({
                 ...params,
-                type: 'custom', // Use Custom Edge
-                // FORCE THE VISUAL TO BE CENTER-TO-CENTER
-                // We overwrite whatever handle the user dragged from/to with our 'center' handle logic
+                type: 'custom',
                 sourceHandle: 'center',
                 targetHandle: 'center',
                 animated: true,
                 style: { stroke: edgeColor, strokeWidth: 2 }
             }, eds);
         });
-    }, [setEdges, nodes]); // Added nodes to dependency
+    }, [setEdges, nodes]);
 
     // DELETE NODE
     const deleteNode = (id: string) => {
@@ -413,8 +444,7 @@ export default function SimulationWorkspace() {
                                 max-w-[85%] p-3 rounded-2xl text-xs leading-relaxed shadow-sm
                                 ${msg.role === 'user'
                                     ? 'bg-indigo-600 text-white rounded-tr-none'
-                                    : 'bg-slate-100 text-slate-700 rounded-tl-none border border-slate-200'}
-                            `}>
+                                    : 'bg-slate-100 text-slate-700 rounded-tl-none border border-slate-200'}`}>
                                 {msg.content}
                             </div>
                         </div>
@@ -463,9 +493,24 @@ export default function SimulationWorkspace() {
                     >
                         <Save size={14} className="text-emerald-500" /> Save
                     </button>
+                    {/* RUN ANALYSIS BUTTON */}
+                    <button
+                        onClick={runPrediction}
+                        disabled={predictionLoading || nodes.filter(n => n.data.type !== 'CCP').length === 0}
+                        className={`px-4 py-2 rounded-xl shadow-lg flex items-center gap-2 text-xs font-bold transition-all active:scale-95 ${predictionLoading || nodes.filter(n => n.data.type !== 'CCP').length === 0
+                            ? 'bg-slate-200 text-slate-400 cursor-not-allowed'
+                            : 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-emerald-500/20'
+                            }`}
+                    >
+                        {predictionLoading ? (
+                            <><Loader2 className="animate-spin" size={14} /> Analyzing...</>
+                        ) : (
+                            <><Play size={14} /> Run Analysis</>
+                        )}
+                    </button>
                 </div>
 
-                {/* SEARCH MODAL (Simple overlay) */}
+                {/* SEARCH MODAL */}
                 {isSearchOpen && (
                     <div className="absolute top-16 left-4 w-80 bg-white rounded-xl shadow-2xl border border-slate-200 z-50 overflow-hidden flex flex-col max-h-[400px]">
                         <div className="p-3 border-b border-slate-100 flex items-center gap-2">
@@ -528,9 +573,82 @@ export default function SimulationWorkspace() {
                 </ReactFlow>
             </main>
 
-            {/* RIGHT SIDEBAR: DETAILS */}
+            {/* RIGHT SIDEBAR: INSTITUTIONS + RESULTS */}
             <aside className="w-72 h-full bg-white border-l border-slate-200 hidden lg:flex flex-col p-6 z-10 shrink-0 shadow-lg">
-                <div className="flex items-center justify-between mb-6">
+                {/* Results Section */}
+                {(prediction || predictionError) && (
+                    <div className="mb-6 pb-6 border-b border-slate-100">
+                        <div className="flex items-center justify-between mb-4">
+                            <h2 className="text-xs font-bold text-slate-900 uppercase tracking-wider">Risk Analysis</h2>
+                            {prediction && (
+                                <div className="flex items-center gap-1">
+                                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                                    <span className="text-[10px] font-medium text-emerald-600">Done</span>
+                                </div>
+                            )}
+                        </div>
+
+                        {predictionError && (
+                            <div className="p-3 bg-red-50 border border-red-200 rounded-xl flex items-start gap-2">
+                                <AlertTriangle className="text-red-500 shrink-0 mt-0.5" size={12} />
+                                <p className="text-[10px] text-red-600">{predictionError}</p>
+                            </div>
+                        )}
+
+                        {prediction && (
+                            <div className="space-y-3">
+                                <div className="p-3 bg-gradient-to-br from-indigo-50 to-white rounded-xl border border-indigo-100">
+                                    <h3 className="text-[9px] font-bold text-indigo-600 uppercase tracking-widest mb-1">Systemic Risk</h3>
+                                    <div className="flex items-end gap-1">
+                                        <span className="text-2xl font-bold text-slate-900">
+                                            {(prediction.predicted_next_systemic_risk * 100).toFixed(1)}
+                                        </span>
+                                        <span className="text-sm text-slate-400 mb-0.5">%</span>
+                                    </div>
+                                </div>
+
+                                <div className="p-3 bg-slate-50 rounded-xl border border-slate-100">
+                                    <h3 className="text-[9px] font-bold text-slate-500 uppercase tracking-widest mb-1 flex items-center gap-1">
+                                        <TrendingUp size={10} /> Payoff S_t
+                                    </h3>
+                                    <span className="text-lg font-bold text-slate-900">{prediction.latest_S_t.toFixed(4)}</span>
+                                </div>
+
+                                {/* CCP Funds Display */}
+                                {prediction.ccp_funds && (
+                                    <div className="p-3 bg-gradient-to-br from-amber-50 to-white rounded-xl border border-amber-100">
+                                        <h3 className="text-[9px] font-bold text-amber-600 uppercase tracking-widest mb-2">CCP Funds</h3>
+                                        <div className="grid grid-cols-2 gap-2 text-[10px]">
+                                            <div className="bg-white/60 p-2 rounded-lg">
+                                                <span className="text-slate-400 block">Initial Margin</span>
+                                                <span className="font-bold text-slate-800">{prediction.ccp_funds.initial_margin.toFixed(1)}</span>
+                                            </div>
+                                            <div className="bg-white/60 p-2 rounded-lg">
+                                                <span className="text-slate-400 block">Variation Margin</span>
+                                                <span className="font-bold text-slate-800">{prediction.ccp_funds.variation_margin_flow.toFixed(1)}</span>
+                                            </div>
+                                            <div className="bg-white/60 p-2 rounded-lg">
+                                                <span className="text-slate-400 block">Default Fund</span>
+                                                <span className="font-bold text-slate-800">{prediction.ccp_funds.default_fund.toFixed(1)}</span>
+                                            </div>
+                                            <div className="bg-white/60 p-2 rounded-lg">
+                                                <span className="text-slate-400 block">CCP Capital</span>
+                                                <span className="font-bold text-slate-800">{prediction.ccp_funds.ccp_capital.toFixed(1)}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+
+                                <div className="text-[9px] text-slate-400 text-center">
+                                    Data: {prediction.end_date}
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                )}
+
+                {/* Institutions List */}
+                <div className="flex items-center justify-between mb-4">
                     <h2 className="text-xs font-bold text-slate-900 uppercase tracking-wider">Institutions</h2>
                     <div className="flex items-center gap-1.5 px-2 py-1 bg-indigo-50 rounded-md border border-indigo-100">
                         <Activity size={12} className="text-indigo-600" />
@@ -543,7 +661,6 @@ export default function SimulationWorkspace() {
                         <div key={node.id} className="group p-3 bg-white border border-slate-100 rounded-xl hover:border-indigo-200 hover:shadow-md transition-all cursor-default relative">
                             <div className="flex items-center justify-between mb-1">
                                 <span className="text-xs font-bold text-slate-700 truncate max-w-[120px]">{node.data.label}</span>
-                                {/* Delete Button on Sidebar Item */}
                                 <button
                                     onClick={(e) => { e.stopPropagation(); deleteNode(node.id); }}
                                     className="opacity-0 group-hover:opacity-100 p-1 hover:bg-red-50 text-slate-300 hover:text-red-500 rounded transition-all"

@@ -1,134 +1,89 @@
 {
   "nodes": [
     {
-      "id": "ccp-1",
+      "id": "ICICIBANK.NS",
       "type": "custom",
       "position": {
-        "x": 436.4307405148694,
-        "y": 373.18327150388274
+        "x": 570.4267748428177,
+        "y": 68.91967659862128
       },
       "data": {
-        "label": "CCP-1",
-        "type": "CCP",
-        "details": "Central Clearing House",
-        "isUnconnected": false
+        "label": "ICICI BANK LTD.",
+        "type": "Financial Institution",
+        "details": "NSI - ICICIBANK.NS",
+        "isUnconnected": true
       },
       "width": 80,
       "height": 80,
       "selected": false,
       "positionAbsolute": {
-        "x": 436.4307405148694,
-        "y": 373.18327150388274
+        "x": 570.4267748428177,
+        "y": 68.91967659862128
       },
       "dragging": false
     },
     {
-      "id": "RS",
+      "id": "KOTAKBANK.NS",
       "type": "custom",
       "position": {
-        "x": 260.76844768639944,
-        "y": 228.1319585826499
+        "x": 759.4231176225888,
+        "y": 267.02940046613196
       },
       "data": {
-        "label": "Reliance, Inc.",
+        "label": "KOTAK MAHINDRA BANK LTD",
         "type": "Financial Institution",
-        "details": "NYQ - RS",
-        "isUnconnected": false
-      },
-      "width": 80,
-      "height": 80,
-      "selected": false,
-      "positionAbsolute": {
-        "x": 260.76844768639944,
-        "y": 228.1319585826499
-      },
-      "dragging": false
-    },
-    {
-      "id": "IDFCFIRSTB.NS",
-      "type": "custom",
-      "position": {
-        "x": 597.543086457508,
-        "y": 216.58946667903783
-      },
-      "data": {
-        "label": "IDFC FIRST BANK LIMITED",
-        "type": "Financial Institution",
-        "details": "NSI - IDFCFIRSTB.NS",
-        "isUnconnected": false
-      },
-      "width": 80,
-      "height": 80,
-      "selected": false,
-      "positionAbsolute": {
-        "x": 597.543086457508,
-        "y": 216.58946667903783
-      },
-      "dragging": false
-    },
-    {
-      "id": "SBILIFE.BO",
-      "type": "custom",
-      "position": {
-        "x": 484.39286521454835,
-        "y": 49.31321019012744
-      },
-      "data": {
-        "label": "SBI Life Insurance Company Lim",
-        "type": "Financial Institution",
-        "details": "BSE - SBILIFE.BO",
-        "isUnconnected": false
+        "details": "NSI - KOTAKBANK.NS",
+        "isUnconnected": true
       },
       "width": 80,
       "height": 80,
       "selected": true,
       "positionAbsolute": {
-        "x": 484.39286521454835,
-        "y": 49.31321019012744
+        "x": 759.4231176225888,
+        "y": 267.02940046613196
       },
       "dragging": false
+    },
+    {
+      "id": "BAJFINANCE.NS",
+      "type": "custom",
+      "position": {
+        "x": 687.8080422915899,
+        "y": 135.46167467661556
+      },
+      "data": {
+        "label": "BAJAJ FINANCE LIMITED",
+        "type": "Financial Institution",
+        "details": "NSI - BAJFINANCE.NS",
+        "isUnconnected": true
+      },
+      "width": 80,
+      "height": 80,
+      "selected": false,
+      "positionAbsolute": {
+        "x": 687.8080422915899,
+        "y": 135.46167467661556
+      },
+      "dragging": false
+    },
+    {
+      "id": "BSE.NS",
+      "type": "custom",
+      "position": {
+        "x": 298.1044152626777,
+        "y": 377.2246475620328
+      },
+      "data": {
+        "label": "BSE LIMITED",
+        "type": "Financial Institution",
+        "details": "NSI - BSE.NS",
+        "isUnconnected": true
+      },
+      "width": 80,
+      "height": 80
     }
   ],
   "edges": [
-    {
-      "id": "e-RS-ccp-1",
-      "source": "RS",
-      "target": "ccp-1",
-      "type": "custom",
-      "sourceHandle": "center",
-      "targetHandle": "center",
-      "animated": true,
-      "style": {
-        "stroke": "#94a3b8",
-        "strokeWidth": 2
-      }
-    },
-    {
-      "id": "e-IDFCFIRSTB.NS-ccp-1",
-      "source": "IDFCFIRSTB.NS",
-      "target": "ccp-1",
-      "type": "custom",
-      "sourceHandle": "center",
-      "targetHandle": "center",
-      "animated": true,
-      "style": {
-        "stroke": "#94a3b8",
-        "strokeWidth": 2
-      }
-    },
-    {
-      "id": "e-SBILIFE.BO-ccp-1",
-      "source": "SBILIFE.BO",
-      "target": "ccp-1",
-      "type": "custom",
-      "sourceHandle": "center",
-      "targetHandle": "center",
-      "animated": true,
-      "style": {
-        "stroke": "#94a3b8",
-        "strokeWidth": 2
-      }
-    },
     {
       "source": "SBILIFE.BO",
       "sourceHandle": "center",

@@ -1,0 +1,24 @@
+{
+    "tickers": [
+        "HDFCBANK.NS",
+        "KOTAKBANK.NS",
+        "ICICIBANK.NS",
+        "BAJFINANCE.NS",
+        "BSE.NS",
+        "TCS.NS",
+        "INFY.NS",
+        "RELIANCE.NS",
+        "SBIN.NS",
+        "ADANIENT.NS",
+        "MRF.NS",
+        "HINDUNILVR.NS",
+        "TATASTEEL.NS",
+        "AXISBANK.NS",
+        "BHARTIARTL.NS"
+    ],
+    "ccp_name": "CCP",
+    "start": "2022-01-01",
+    "ret_window": 20,
+    "lookback": 20,
+    "delta_ccp": 0.1
+}

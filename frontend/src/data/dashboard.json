@@ -1,5 +1,11 @@
 [
   {
+    "id": "ib-7609",
+    "name": "IB",
+    "createdAt": "2026-02-07T23:41:57.610Z",
+    "path": "./simulations/ib-7609.json"
+  },
+  {
     "id": "new-simulation-8919",
     "name": "New Simulation",
     "createdAt": "2026-02-07T16:45:08.921Z",
