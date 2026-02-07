@@ -1,0 +1,262 @@
+{
+  "nodes": [
+    {
+      "id": "ccp-1",
+      "type": "custom",
+      "position": {
+        "x": 400.0,
+        "y": 300.0
+      },
+      "data": {
+        "label": "CCP-1",
+        "type": "CCP",
+        "details": "Central Clearing House"
+      }
+    },
+    {
+      "id": "bank-1",
+      "type": "custom",
+      "position": {
+        "x": 699,
+        "y": 267
+      },
+      "data": {
+        "label": "Bank Alpha",
+        "type": "Bank",
+        "details": "Member bank Alpha"
+      }
+    },
+    {
+      "id": "bank-2",
+      "type": "custom",
+      "position": {
+        "x": 200,
+        "y": 147
+      },
+      "data": {
+        "label": "Bank Beta",
+        "type": "Bank",
+        "details": "Member bank Beta"
+      }
+    },
+    {
+      "id": "bank-3",
+      "type": "custom",
+      "position": {
+        "x": 467,
+        "y": 435
+      },
+      "data": {
+        "label": "Bank Gamma",
+        "type": "Bank",
+        "details": "Member bank Gamma"
+      }
+    },
+    {
+      "id": "bank-4",
+      "type": "custom",
+      "position": {
+        "x": 608,
+        "y": 485
+      },
+      "data": {
+        "label": "Bank Delta",
+        "type": "Bank",
+        "details": "Member bank Delta"
+      }
+    },
+    {
+      "id": "bank-5",
+      "type": "custom",
+      "position": {
+        "x": 741,
+        "y": 265
+      },
+      "data": {
+        "label": "Bank Epsilon",
+        "type": "Bank",
+        "details": "Member bank Epsilon"
+      }
+    },
+    {
+      "id": "bank-6",
+      "type": "custom",
+      "position": {
+        "x": 636,
+        "y": 98
+      },
+      "data": {
+        "label": "Bank Zeta",
+        "type": "Bank",
+        "details": "Member bank Zeta"
+      }
+    },
+    {
+      "id": "bank-7",
+      "type": "custom",
+      "position": {
+        "x": 270,
+        "y": 238
+      },
+      "data": {
+        "label": "Bank Eta",
+        "type": "Bank",
+        "details": "Member bank Eta"
+      }
+    },
+    {
+      "id": "bank-8",
+      "type": "custom",
+      "position": {
+        "x": 669,
+        "y": 483
+      },
+      "data": {
+        "label": "Bank Theta",
+        "type": "Bank",
+        "details": "Member bank Theta"
+      }
+    },
+    {
+      "id": "bank-9",
+      "type": "custom",
+      "position": {
+        "x": 114,
+        "y": 172
+      },
+      "data": {
+        "label": "Bank Iota",
+        "type": "Bank",
+        "details": "Member bank Iota"
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "e-bank-1-ccp",
+      "source": "bank-1",
+      "target": "ccp-1",
+      "animated": true,
+      "style": {
+        "stroke": "#6366f1"
+      }
+    },
+    {
+      "id": "e-bank-2-ccp",
+      "source": "bank-2",
+      "target": "ccp-1",
+      "animated": true,
+      "style": {
+        "stroke": "#6366f1"
+      }
+    },
+    {
+      "id": "e-bank-3-ccp",
+      "source": "bank-3",
+      "target": "ccp-1",
+      "animated": true,
+      "style": {
+        "stroke": "#6366f1"
+      }
+    },
+    {
+      "id": "e-bank-4-ccp",
+      "source": "bank-4",
+      "target": "ccp-1",
+      "animated": true,
+      "style": {
+        "stroke": "#6366f1"
+      }
+    },
+    {
+      "id": "e-bank-5-ccp",
+      "source": "bank-5",
+      "target": "ccp-1",
+      "animated": true,
+      "style": {
+        "stroke": "#6366f1"
+      }
+    },
+    {
+      "id": "e-bank-6-ccp",
+      "source": "bank-6",
+      "target": "ccp-1",
+      "animated": true,
+      "style": {
+        "stroke": "#6366f1"
+      }
+    },
+    {
+      "id": "e-bank-7-ccp",
+      "source": "bank-7",
+      "target": "ccp-1",
+      "animated": true,
+      "style": {
+        "stroke": "#6366f1"
+      }
+    },
+    {
+      "id": "e-bank-8-ccp",
+      "source": "bank-8",
+      "target": "ccp-1",
+      "animated": true,
+      "style": {
+        "stroke": "#6366f1"
+      }
+    },
+    {
+      "id": "e-bank-9-ccp",
+      "source": "bank-9",
+      "target": "ccp-1",
+      "animated": true,
+      "style": {
+        "stroke": "#6366f1"
+      }
+    },
+    {
+      "id": "e-bank-5-bank-6",
+      "source": "bank-5",
+      "target": "bank-6",
+      "animated": false,
+      "style": {
+        "stroke": "#cbd5e1"
+      }
+    },
+    {
+      "id": "e-bank-5-bank-4",
+      "source": "bank-5",
+      "target": "bank-4",
+      "animated": false,
+      "style": {
+        "stroke": "#cbd5e1"
+      }
+    },
+    {
+      "id": "e-bank-6-bank-7",
+      "source": "bank-6",
+      "target": "bank-7",
+      "animated": false,
+      "style": {
+        "stroke": "#cbd5e1"
+      }
+    },
+    {
+      "id": "e-bank-7-bank-1",
+      "source": "bank-7",
+      "target": "bank-1",
+      "animated": false,
+      "style": {
+        "stroke": "#cbd5e1"
+      }
+    },
+    {
+      "id": "e-bank-2-bank-7",
+      "source": "bank-2",
+      "target": "bank-7",
+      "animated": false,
+      "style": {
+        "stroke": "#cbd5e1"
+      }
+    }
+  ]
+}

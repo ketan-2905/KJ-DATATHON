@@ -1,0 +1,159 @@
+{
+  "nodes": [
+    {
+      "id": "ccp-1",
+      "type": "custom",
+      "position": {
+        "x": 363.7415355288774,
+        "y": 156.18886570807973
+      },
+      "data": {
+        "label": "CCP-1",
+        "type": "CCP",
+        "details": "Central Clearing House",
+        "isUnconnected": false
+      },
+      "width": 80,
+      "height": 80,
+      "selected": false,
+      "positionAbsolute": {
+        "x": 363.7415355288774,
+        "y": 156.18886570807973
+      },
+      "dragging": false
+    },
+    {
+      "id": "RS",
+      "type": "custom",
+      "position": {
+        "x": 366.5599449489905,
+        "y": -218.05780239123604
+      },
+      "data": {
+        "label": "Reliance, Inc.",
+        "type": "Financial Institution",
+        "details": "NYQ - RS",
+        "isUnconnected": false
+      },
+      "width": 80,
+      "height": 80,
+      "selected": false,
+      "positionAbsolute": {
+        "x": 366.5599449489905,
+        "y": -218.05780239123604
+      },
+      "dragging": false
+    },
+    {
+      "id": "HDB",
+      "type": "custom",
+      "position": {
+        "x": -0.5213138768350518,
+        "y": -302.1711892864472
+      },
+      "data": {
+        "label": "HDFC Bank Limited",
+        "type": "Financial Institution",
+        "details": "NYQ - HDB",
+        "isUnconnected": false
+      },
+      "width": 80,
+      "height": 80,
+      "selected": false,
+      "positionAbsolute": {
+        "x": -0.5213138768350518,
+        "y": -302.1711892864472
+      },
+      "dragging": false
+    },
+    {
+      "id": "IBN",
+      "type": "custom",
+      "position": {
+        "x": -137.0106350061443,
+        "y": 145.110097731753
+      },
+      "data": {
+        "label": "ICICI Bank Limited",
+        "type": "Financial Institution",
+        "details": "NYQ - IBN",
+        "isUnconnected": false
+      },
+      "width": 80,
+      "height": 80,
+      "selected": true,
+      "positionAbsolute": {
+        "x": -137.0106350061443,
+        "y": 145.110097731753
+      },
+      "dragging": false
+    }
+  ],
+  "edges": [
+    {
+      "source": "HDB",
+      "sourceHandle": null,
+      "target": "ccp-1",
+      "targetHandle": null,
+      "type": "custom",
+      "animated": true,
+      "style": {
+        "stroke": "#94a3b8",
+        "strokeWidth": 2
+      },
+      "id": "reactflow__edge-HDB-ccp-1"
+    },
+    {
+      "source": "ccp-1",
+      "sourceHandle": null,
+      "target": "IBN",
+      "targetHandle": null,
+      "type": "custom",
+      "animated": true,
+      "style": {
+        "stroke": "#94a3b8",
+        "strokeWidth": 2
+      },
+      "id": "reactflow__edge-ccp-1-IBN"
+    },
+    {
+      "source": "HDB",
+      "sourceHandle": null,
+      "target": "IBN",
+      "targetHandle": null,
+      "type": "custom",
+      "animated": true,
+      "style": {
+        "stroke": "#3b82f6",
+        "strokeWidth": 2
+      },
+      "id": "reactflow__edge-HDB-IBN"
+    },
+    {
+      "source": "HDB",
+      "sourceHandle": null,
+      "target": "RS",
+      "targetHandle": null,
+      "type": "custom",
+      "animated": true,
+      "style": {
+        "stroke": "#3b82f6",
+        "strokeWidth": 2
+      },
+      "id": "reactflow__edge-HDB-RS"
+    },
+    {
+      "source": "RS",
+      "sourceHandle": null,
+      "target": "IBN",
+      "targetHandle": null,
+      "type": "custom",
+      "animated": true,
+      "style": {
+        "stroke": "#3b82f6",
+        "strokeWidth": 2
+      },
+      "id": "reactflow__edge-RS-IBN"
+    }
+  ]
+}

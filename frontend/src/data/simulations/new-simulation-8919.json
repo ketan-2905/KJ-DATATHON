@@ -1,0 +1,172 @@
+{
+  "nodes": [
+    {
+      "id": "ccp-1",
+      "type": "custom",
+      "position": {
+        "x": 436.4307405148694,
+        "y": 373.18327150388274
+      },
+      "data": {
+        "label": "CCP-1",
+        "type": "CCP",
+        "details": "Central Clearing House",
+        "isUnconnected": false
+      },
+      "width": 80,
+      "height": 80,
+      "selected": false,
+      "positionAbsolute": {
+        "x": 436.4307405148694,
+        "y": 373.18327150388274
+      },
+      "dragging": false
+    },
+    {
+      "id": "RS",
+      "type": "custom",
+      "position": {
+        "x": 260.76844768639944,
+        "y": 228.1319585826499
+      },
+      "data": {
+        "label": "Reliance, Inc.",
+        "type": "Financial Institution",
+        "details": "NYQ - RS",
+        "isUnconnected": false
+      },
+      "width": 80,
+      "height": 80,
+      "selected": false,
+      "positionAbsolute": {
+        "x": 260.76844768639944,
+        "y": 228.1319585826499
+      },
+      "dragging": false
+    },
+    {
+      "id": "IDFCFIRSTB.NS",
+      "type": "custom",
+      "position": {
+        "x": 597.543086457508,
+        "y": 216.58946667903783
+      },
+      "data": {
+        "label": "IDFC FIRST BANK LIMITED",
+        "type": "Financial Institution",
+        "details": "NSI - IDFCFIRSTB.NS",
+        "isUnconnected": false
+      },
+      "width": 80,
+      "height": 80,
+      "selected": false,
+      "positionAbsolute": {
+        "x": 597.543086457508,
+        "y": 216.58946667903783
+      },
+      "dragging": false
+    },
+    {
+      "id": "SBILIFE.BO",
+      "type": "custom",
+      "position": {
+        "x": 484.39286521454835,
+        "y": 49.31321019012744
+      },
+      "data": {
+        "label": "SBI Life Insurance Company Lim",
+        "type": "Financial Institution",
+        "details": "BSE - SBILIFE.BO",
+        "isUnconnected": false
+      },
+      "width": 80,
+      "height": 80,
+      "selected": true,
+      "positionAbsolute": {
+        "x": 484.39286521454835,
+        "y": 49.31321019012744
+      },
+      "dragging": false
+    }
+  ],
+  "edges": [
+    {
+      "id": "e-RS-ccp-1",
+      "source": "RS",
+      "target": "ccp-1",
+      "type": "custom",
+      "sourceHandle": "center",
+      "targetHandle": "center",
+      "animated": true,
+      "style": {
+        "stroke": "#94a3b8",
+        "strokeWidth": 2
+      }
+    },
+    {
+      "id": "e-IDFCFIRSTB.NS-ccp-1",
+      "source": "IDFCFIRSTB.NS",
+      "target": "ccp-1",
+      "type": "custom",
+      "sourceHandle": "center",
+      "targetHandle": "center",
+      "animated": true,
+      "style": {
+        "stroke": "#94a3b8",
+        "strokeWidth": 2
+      }
+    },
+    {
+      "id": "e-SBILIFE.BO-ccp-1",
+      "source": "SBILIFE.BO",
+      "target": "ccp-1",
+      "type": "custom",
+      "sourceHandle": "center",
+      "targetHandle": "center",
+      "animated": true,
+      "style": {
+        "stroke": "#94a3b8",
+        "strokeWidth": 2
+      }
+    },
+    {
+      "source": "SBILIFE.BO",
+      "sourceHandle": "center",
+      "target": "IDFCFIRSTB.NS",
+      "targetHandle": "center",
+      "type": "custom",
+      "animated": true,
+      "style": {
+        "stroke": "#3b82f6",
+        "strokeWidth": 2
+      },
+      "id": "reactflow__edge-SBILIFE.BOcenter-IDFCFIRSTB.NScenter"
+    },
+    {
+      "source": "RS",
+      "sourceHandle": "center",
+      "target": "SBILIFE.BO",
+      "targetHandle": "center",
+      "type": "custom",
+      "animated": true,
+      "style": {
+        "stroke": "#3b82f6",
+        "strokeWidth": 2
+      },
+      "id": "reactflow__edge-RScenter-SBILIFE.BOcenter"
+    },
+    {
+      "source": "IDFCFIRSTB.NS",
+      "sourceHandle": "center",
+      "target": "RS",
+      "targetHandle": "center",
+      "type": "custom",
+      "animated": true,
+      "style": {
+        "stroke": "#3b82f6",
+        "strokeWidth": 2
+      },
+      "id": "reactflow__edge-IDFCFIRSTB.NScenter-RScenter"
+    }
+  ]
+}

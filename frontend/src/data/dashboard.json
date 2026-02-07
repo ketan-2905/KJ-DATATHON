@@ -1,0 +1,15 @@
+[
+  {
+    "id": "new-simulation-8919",
+    "name": "New Simulation",
+    "createdAt": "2026-02-07T16:45:08.921Z",
+    "path": "./simulations/new-simulation-8919.json"
+  },
+  {
+    "id": "demo-simulation",
+    "name": "Demo Simulation",
+    "description": "Initial example of a financial network.",
+    "createdAt": "2026-02-07T15:00:00.000Z",
+    "path": "/dashboard/simulation/demo-simulation"
+  }
+]
