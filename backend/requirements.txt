@@ -8,3 +8,5 @@ tensorflow-cpu
 huggingface_hub
 joblib
 pyzmq==26.2.0
+openai
+python-dotenv

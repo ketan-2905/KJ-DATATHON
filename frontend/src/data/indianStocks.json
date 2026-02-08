@@ -1,0 +1,79 @@
+{
+    "stocks": [
+        {
+            "ticker": "TCS.NS",
+            "name": "Tata Consultancy Services",
+            "type": "IT Services"
+        },
+        {
+            "ticker": "ICICIBANK.NS",
+            "name": "ICICI Bank",
+            "type": "Bank"
+        },
+        {
+            "ticker": "HDFCBANK.NS",
+            "name": "HDFC Bank",
+            "type": "Bank"
+        },
+        {
+            "ticker": "INFY.NS",
+            "name": "Infosys",
+            "type": "IT Services"
+        },
+        {
+            "ticker": "RELIANCE.NS",
+            "name": "Reliance Industries",
+            "type": "Conglomerate"
+        },
+        {
+            "ticker": "SBIN.NS",
+            "name": "State Bank of India",
+            "type": "Bank"
+        },
+        {
+            "ticker": "AXISBANK.NS",
+            "name": "Axis Bank",
+            "type": "Bank"
+        },
+        {
+            "ticker": "KOTAKBANK.NS",
+            "name": "Kotak Mahindra Bank",
+            "type": "Bank"
+        },
+        {
+            "ticker": "WIPRO.NS",
+            "name": "Wipro",
+            "type": "IT Services"
+        },
+        {
+            "ticker": "BHARTIARTL.NS",
+            "name": "Bharti Airtel",
+            "type": "Telecom"
+        },
+        {
+            "ticker": "LT.NS",
+            "name": "Larsen & Toubro",
+            "type": "Engineering"
+        },
+        {
+            "ticker": "TATAMOTORS.NS",
+            "name": "Tata Motors",
+            "type": "Automobile"
+        },
+        {
+            "ticker": "MARUTI.NS",
+            "name": "Maruti Suzuki",
+            "type": "Automobile"
+        },
+        {
+            "ticker": "SUNPHARMA.NS",
+            "name": "Sun Pharma",
+            "type": "Pharmaceutical"
+        },
+        {
+            "ticker": "TITAN.NS",
+            "name": "Titan Company",
+            "type": "Consumer Goods"
+        }
+    ]
+}

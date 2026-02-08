@@ -13,10 +13,161 @@ from pydantic import BaseModel, Field
 from typing import List, Dict, Any, Optional
 from huggingface_hub import hf_hub_download
 from datetime import datetime, timedelta
+from dotenv import load_dotenv
+from openai import OpenAI
+
+# Load environment variables
+load_dotenv()
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+# --- LLM Client Setup ---
+llm_client = OpenAI(
+    base_url="https://api.featherless.ai/v1",
+    api_key=os.getenv("FEATHERLESS_API_KEY")
+)
+
+def analyze_cascade_with_llm(
+    nodes: List[str],
+    shocked_node: str,
+    shock_magnitude: float,
+    connectivity_strength: float,
+    liquidity_buffer: float,
+    systemic_risk: float,
+    congestion_level: str
+) -> Dict[str, Any]:
+    """
+    Use LLM to analyze cascade with HARD BOUNDARIES.
+    Cascade triggers deterministically based on thresholds:
+    - Shock magnitude > 0.6 (60%)
+    - Connectivity strength > 1.3
+    - Liquidity buffer < 0.7
+    - Systemic risk > 0.5 (50%)
+    """
+    
+    # HARD BOUNDARY RULES - cascade triggers if ANY of these:
+    trigger_shock = shock_magnitude > 0.6
+    trigger_connectivity = connectivity_strength > 1.3
+    trigger_liquidity = liquidity_buffer < 0.7
+    trigger_systemic = systemic_risk > 0.5
+    trigger_congestion = congestion_level == "high"
+    
+    should_cascade = (trigger_shock and (trigger_connectivity or trigger_liquidity)) or \
+                     (trigger_systemic and trigger_congestion) or \
+                     (shock_magnitude > 0.8)  # Very high shock always cascades
+    
+    if not should_cascade:
+        return {
+            "status": "stable",
+            "failed_nodes": [],
+            "failed_edges": [],
+            "failure_ratio": 0.0,
+            "cascade_depth": 0,
+            "analysis": "Network is stable. No cascade triggered."
+        }
+    
+    # Use LLM to determine WHICH nodes fail given the cascade is triggered
+    prompt = f"""You are a financial network cascade analyzer. Analyze this network stress scenario.
+
+NETWORK NODES: {nodes}
+SHOCKED NODE: {shocked_node}
+SHOCK MAGNITUDE: {shock_magnitude * 100:.0f}%
+CONNECTIVITY STRENGTH: {connectivity_strength}
+LIQUIDITY BUFFER LEVEL: {liquidity_buffer}
+SYSTEMIC RISK SCORE: {systemic_risk * 100:.0f}%
+CONGESTION LEVEL: {congestion_level}
+
+CASCADE HAS BEEN TRIGGERED. Determine which nodes fail based on these rules:
+1. The shocked node ALWAYS fails first
+2. If shock > 70%, nodes most connected to the shocked node fail next
+3. If connectivity > 1.5, failures spread to 50% of remaining nodes
+4. If liquidity < 0.5, all nodes fail
+5. Otherwise, 1-3 additional nodes fail proportional to shock magnitude
+
+Respond with ONLY valid JSON (no markdown, no extra text):
+{{"failed_nodes": ["NODE1.NS", "NODE2.NS"], "cascade_depth": 2, "analysis": "brief explanation"}}
+
+IMPORTANT: Only include nodes from the NETWORK NODES list. The shocked node must be in failed_nodes."""
+
+    try:
+        response = llm_client.chat.completions.create(
+            model="moonshotai/Kimi-K2-Instruct",
+            messages=[
+                {"role": "system", "content": "You are a financial risk analyst. Always respond with valid JSON only."},
+                {"role": "user", "content": prompt}
+            ],
+            temperature=0.1,  # Low temperature for deterministic output
+            max_tokens=500
+        )
+        
+        result_text = response.choices[0].message.content.strip()
+        
+        # Clean up response - remove markdown code blocks if present
+        if result_text.startswith("```"):
+            result_text = result_text.split("```")[1]
+            if result_text.startswith("json"):
+                result_text = result_text[4:]
+        result_text = result_text.strip()
+        
+        result = json.loads(result_text)
+        failed_nodes = result.get("failed_nodes", [shocked_node])
+        
+        # Ensure shocked node is in failed list
+        if shocked_node not in failed_nodes:
+            failed_nodes.insert(0, shocked_node)
+        
+        # Filter to only valid nodes
+        failed_nodes = [n for n in failed_nodes if n in nodes]
+        
+        # Generate failed edges (edges connected to failed nodes)
+        failed_edges = []
+        for fn in failed_nodes:
+            for other in nodes:
+                if other != fn and other not in failed_nodes:
+                    failed_edges.append({"source": fn, "target": other})
+        
+        return {
+            "status": "cascade",
+            "failed_nodes": failed_nodes,
+            "failed_edges": failed_edges,
+            "failure_ratio": len(failed_nodes) / len(nodes) if nodes else 0,
+            "cascade_depth": result.get("cascade_depth", 1),
+            "analysis": result.get("analysis", "Cascade triggered due to network stress.")
+        }
+        
+    except Exception as e:
+        logger.error(f"LLM cascade analysis failed: {e}")
+        # Fallback: deterministic cascade based on rules
+        failed_nodes = [shocked_node]
+        
+        if shock_magnitude > 0.8:
+            # Add ~50% of nodes
+            additional = int(len(nodes) * 0.5)
+            for n in nodes:
+                if n != shocked_node and len(failed_nodes) < additional + 1:
+                    failed_nodes.append(n)
+        elif shock_magnitude > 0.6:
+            # Add 1-2 nodes
+            for n in nodes[:2]:
+                if n != shocked_node:
+                    failed_nodes.append(n)
+        
+        failed_edges = []
+        for fn in failed_nodes:
+            for other in nodes:
+                if other != fn and other not in failed_nodes:
+                    failed_edges.append({"source": fn, "target": other})
+        
+        return {
+            "status": "cascade",
+            "failed_nodes": failed_nodes,
+            "failed_edges": failed_edges,
+            "failure_ratio": len(failed_nodes) / len(nodes) if nodes else 0,
+            "cascade_depth": 1,
+            "analysis": f"Cascade triggered (fallback mode): {str(e)[:50]}"
+        }
 
 # --- Configuration & Global State ---
 app = FastAPI(title="Equilibrium Systemic Risk API")
@@ -522,6 +673,8 @@ async def predict(request: PredictionRequest):
     try:
         prediction = model.predict(X_reshaped)
         risk_score = float(prediction[0][0])
+        # Cap at 1.0 (100%) to prevent exceeding maximum
+        risk_score = min(risk_score, 1.0)
     except Exception as e:
         logger.error(f"Prediction error: {e}")
         raise HTTPException(status_code=500, detail=f"Model prediction failed: {e}")
@@ -557,3 +710,486 @@ async def predict(request: PredictionRequest):
 @app.get("/health")
 def health():
     return {"status": "ok", "model_loaded": model is not None}
+
+# --- Simulation Models ---
+
+class SimulationRequest(BaseModel):
+    tickers: List[str]
+    start: Optional[str] = None  # Optional start date, default from config
+    end: Optional[str] = None  # Optional end date, default latest
+    shocked_node: str  # Must be in tickers universe
+    shock_magnitude: float = Field(default=0.3, ge=0, le=1)  # 0..1
+    connectivity_strength: float = Field(default=1.0, ge=0.1, le=2.0)
+    liquidity_buffer_level: float = Field(default=1.0, ge=0.1, le=2.0)
+    ccp_strictness: float = Field(default=0.5, ge=0, le=1)
+    correlation_regime: float = Field(default=0.7, ge=0, le=1)
+    steps: int = Field(default=10, ge=1, le=50)  # Cascade steps
+
+class CongestionOutput(BaseModel):
+    level: str  # "low", "medium", "high"
+    most_congested_node: str
+    max_score: float
+
+class CascadeOutput(BaseModel):
+    status: str  # "stable" or "cascade"
+    failed_nodes: List[str]
+    failed_edges: List[Dict[str, str]]  # [{"source": "A.NS", "target": "B.NS"}]
+    failure_ratio: float
+    cascade_depth: int
+    analysis: str  # LLM explanation
+
+class SimulationResponse(BaseModel):
+    end_date: str
+    used_tickers: List[str]
+    masked_tickers: List[str]
+    latest_features: Dict[str, float]
+    latest_payoff_S: float
+    predicted_next_systemic_risk: float
+    congestion: CongestionOutput
+    cascade: CascadeOutput
+    ccp_funds: CCPFundsOutput
+
+# --- Simulation Endpoint ---
+@app.post("/simulate", response_model=SimulationResponse)
+async def simulate(request: SimulationRequest):
+    """
+    Run a network stress simulation with node shocks and global controls.
+    """
+    if not model or not scaler:
+        raise HTTPException(status_code=503, detail="Model not loaded.")
+    
+    all_tickers = config["tickers"]
+    valid_tickers = set(all_tickers)
+    
+    # Validate tickers
+    tickers_subset = request.tickers
+    if not tickers_subset:
+        raise HTTPException(status_code=400, detail="Tickers list cannot be empty.")
+    
+    invalid = [t for t in tickers_subset if t not in valid_tickers]
+    if invalid:
+        raise HTTPException(status_code=400, detail=f"Invalid tickers: {invalid}. Must be in config.")
+    
+    # Validate shocked_node
+    if request.shocked_node not in valid_tickers:
+        raise HTTPException(status_code=400, detail=f"shocked_node '{request.shocked_node}' not in allowed universe.")
+    
+    # Fetch data
+    start_date = request.start if request.start else config["start"]
+    delta_ccp = config["delta_ccp"]
+    ret_window = config.get("ret_window", 20)
+    lookback = config.get("lookback", 20)
+    
+    try:
+        end_param = request.end if request.end else None
+        raw_data = yf.download(all_tickers, start=start_date, end=end_param, progress=False, auto_adjust=True, threads=False)
+        if raw_data is None or raw_data.empty:
+            raise HTTPException(status_code=500, detail="No data returned from yfinance.")
+        data = raw_data['Close']
+    except HTTPException as he:
+        raise he
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to fetch data: {e}")
+    
+    if isinstance(data, pd.Series):
+        data = data.to_frame()
+    
+    existing_tickers = [t for t in all_tickers if t in data.columns]
+    data = data[existing_tickers]
+    N = len(existing_tickers)
+    
+    # Log returns
+    returns = np.log(data / data.shift(1)).dropna()
+    
+    if len(returns) < ret_window:
+        raise HTTPException(status_code=400, detail=f"Insufficient data. Need at least {ret_window} days.")
+    
+    # Use latest window for correlation
+    latest_returns = returns.tail(ret_window)
+    end_date = returns.index[-1].strftime("%Y-%m-%d")
+    
+    # --- Step 1: Build baseline adjacency A ---
+    corr_mat = latest_returns.corr().values
+    corr_mat = np.nan_to_num(corr_mat)
+    A = np.maximum(0, corr_mat)
+    np.fill_diagonal(A, 0)
+    
+    # --- Step 2: Add CCP edges ---
+    # CCP strictness modifies edge weight
+    ccp_edge = delta_ccp * (1 + request.ccp_strictness)
+    
+    # Extend matrix for CCP
+    A_ext = np.zeros((N+1, N+1))
+    A_ext[:N, :N] = A
+    A_ext[:N, N] = ccp_edge  # Bank -> CCP
+    A_ext[N, :N] = ccp_edge  # CCP -> Bank
+    
+    # --- Step 3: Apply global sliders ---
+    # Connectivity strength
+    A_ext = request.connectivity_strength * A_ext
+    
+    # Correlation regime (density gating)
+    tau = 1 - request.correlation_regime
+    A_ext[A_ext < tau] = 0
+    
+    # --- Step 4: Build node risk vector ---
+    # Compute rolling risk metrics
+    rolling_std = returns.rolling(window=ret_window).std()
+    log_prices = returns.cumsum()
+    rolling_max = log_prices.rolling(window=ret_window, min_periods=1).max()
+    drawdown = (log_prices - rolling_max).abs()
+    raw_risk = rolling_std + drawdown
+    
+    # Get latest risk
+    latest_risk = raw_risk.iloc[-1].values
+    
+    # Normalize to [0,1]
+    risk_min = np.nanmin(latest_risk)
+    risk_max = np.nanmax(latest_risk)
+    if risk_max > risk_min:
+        r = (latest_risk - risk_min) / (risk_max - risk_min)
+    else:
+        r = np.zeros(N)
+    
+    r = np.nan_to_num(r, nan=0.0)
+    
+    # Create mask for selected tickers
+    mask_vector = np.array([1.0 if t in tickers_subset else 0.0 for t in existing_tickers])
+    
+    # Apply masking
+    r_masked = r * mask_vector
+    
+    # Apply shock
+    if request.shocked_node in existing_tickers:
+        shock_idx = existing_tickers.index(request.shocked_node)
+        r_masked[shock_idx] = np.clip(r_masked[shock_idx] + request.shock_magnitude, 0, 1)
+    
+    # Extend with CCP (risk = 0)
+    r_ext = np.append(r_masked, 0.0)
+    mask_ext = np.append(mask_vector, 0.0)  # CCP excluded from payoff
+    
+    # --- Step 5: Eigen computations ---
+    eigvals, eigvecs = np.linalg.eigh(A_ext)
+    lambda_max = float(eigvals[-1])
+    v = eigvecs[:, -1]
+    if np.sum(v) < 0:
+        v = -v
+    v = v / (np.linalg.norm(v) + 1e-9)  # Normalize
+    
+    # --- Step 6: Payoff and congestion ---
+    # S = r^T A (m ⊙ v)
+    masked_v = mask_ext * v
+    Av = np.dot(A_ext, masked_v)
+    S = float(np.dot(r_ext, Av))
+    
+    # Congestion scores - ONLY for selected tickers
+    # Buffer baseline: 1 - r, scaled by liquidity
+    b = (1 - r_ext) * request.liquidity_buffer_level
+    b = np.maximum(b, 0.1)  # Minimum buffer
+    
+    # Congestion score per node (only for selected nodes)
+    congestion_scores = np.zeros(N+1)
+    selected_indices = [i for i in range(N) if mask_vector[i] == 1]
+    
+    for i in range(N+1):
+        if i < N and mask_vector[i] == 1:  # Only compute for selected nodes
+            influence = np.dot(A_ext[:, i], r_ext)
+            congestion_scores[i] = (v[i] * influence) / (b[i] + 1e-6)
+        else:
+            congestion_scores[i] = -np.inf  # Ignore non-selected nodes
+    
+    # Find most congested among SELECTED nodes only
+    if len(selected_indices) > 0:
+        selected_congestion = [congestion_scores[i] for i in selected_indices]
+        max_congestion = float(np.max(selected_congestion))
+        most_congested_idx = selected_indices[int(np.argmax(selected_congestion))]
+        most_congested_node = existing_tickers[most_congested_idx]
+    else:
+        max_congestion = 0.0
+        most_congested_node = "None"
+    
+    if max_congestion < 1:
+        congestion_level = "low"
+    elif max_congestion < 1.5:
+        congestion_level = "medium"
+    else:
+        congestion_level = "high"
+    
+    # --- Step 7: ML feature row and prediction ---
+    mean_risk = float(np.mean(r_masked))
+    max_risk = float(np.max(r_masked))
+    std_risk = float(np.std(r_masked))
+    
+    # Features in order
+    feature_row = {
+        "lambda_max": lambda_max,
+        "mean_risk": mean_risk,
+        "max_risk": max_risk,
+        "std_risk": std_risk,
+        "S_lag1": S,  # Approximate for simulation
+        "S_lag5": S   # Approximate for simulation
+    }
+    
+    # Create lookback sequence (repeat feature row)
+    feature_array = np.array([[feature_row.get(col, 0) for col in feature_columns] for _ in range(lookback)])
+    
+    # Scale
+    try:
+        X_scaled = scaler.transform(feature_array)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Scaling failed: {e}")
+    
+    X_reshaped = X_scaled.reshape(1, lookback, len(feature_columns))
+    
+    # Predict
+    try:
+        prediction = model.predict(X_reshaped, verbose=0)
+        risk_score = float(prediction[0][0])
+        # Cap at 1.0 (100%) to prevent exceeding maximum
+        risk_score = min(risk_score, 1.0)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Model prediction failed: {e}")
+    
+    # --- Step 8: CCP Funds calculation ---
+    ccp_funds = compute_ccp_funds(
+        systemic=risk_score,
+        lambda_max=lambda_max,
+        std_risk=std_risk,
+        connectivity_scale=request.connectivity_strength,
+        liquidity_buffer_scale=request.liquidity_buffer_level
+    )
+    
+    # --- Step 9: LLM-Based Cascade Analysis ---
+    # Use LLM with hard boundaries to determine cascade
+    used_tickers_list = [t for t in existing_tickers if t in tickers_subset]
+    
+    cascade_result = analyze_cascade_with_llm(
+        nodes=used_tickers_list,
+        shocked_node=request.shocked_node,
+        shock_magnitude=request.shock_magnitude,
+        connectivity_strength=request.connectivity_strength,
+        liquidity_buffer=request.liquidity_buffer_level,
+        systemic_risk=risk_score,
+        congestion_level=congestion_level
+    )
+    
+    return {
+        "end_date": end_date,
+        "used_tickers": used_tickers_list,
+        "masked_tickers": [t for t in all_tickers if t not in tickers_subset],
+        "latest_features": feature_row,
+        "latest_payoff_S": S,
+        "predicted_next_systemic_risk": risk_score,
+        "congestion": {
+            "level": congestion_level,
+            "most_congested_node": most_congested_node,
+            "max_score": round(max_congestion, 4)
+        },
+        "cascade": cascade_result,
+        "ccp_funds": ccp_funds
+    }
+
+# --- News Generation Endpoints ---
+
+class NewsGenerateRequest(BaseModel):
+    tickers: List[str]
+    count: int = Field(default=10, ge=1, le=20)
+
+class NewsItem(BaseModel):
+    id: str
+    ticker: str
+    company_name: str
+    headline: str
+    summary: str
+    sentiment: str  # positive, negative, neutral
+    confidence: float  # 0-1
+    timestamp: str
+    is_breaking: bool = False
+
+class NewsGenerateResponse(BaseModel):
+    news: List[NewsItem]
+
+class NewsDefaultRequest(BaseModel):
+    ticker: str
+    company_name: str
+    default_magnitude: float = Field(ge=0, le=1)
+
+class NewsDefaultResponse(BaseModel):
+    news: NewsItem
+
+def generate_news_with_llm(tickers: List[str], count: int, is_default: bool = False, default_ticker: str = None, default_company: str = None, default_magnitude: float = 0.0) -> List[Dict[str, Any]]:
+    """Generate realistic financial news using LLM with sentiment analysis."""
+    
+    # Get company names from tickers
+    ticker_to_name = {}
+    for ticker in tickers:
+        try:
+            stock = yf.Ticker(ticker)
+            info = stock.info
+            ticker_to_name[ticker] = info.get('shortName', info.get('longName', ticker.replace('.NS', '')))
+        except:
+            ticker_to_name[ticker] = ticker.replace('.NS', '')
+    
+    if is_default:
+        # Generate breaking default news
+        prompt = f"""Generate a realistic breaking financial news headline and 2-sentence summary about {default_company} ({default_ticker}) facing a severe default/liquidity crisis in the Indian market.
+
+The news should be dramatic and reflect a severity level of {int(default_magnitude * 100)}%.
+
+Respond in this exact JSON format:
+{{
+  "headline": "BREAKING: [Urgent headline about default/crisis]",
+  "summary": "[2-sentence detailed summary explaining the situation]",
+  "sentiment": "negative",
+  "confidence": [0.85-0.99]
+}}"""
+    else:
+        # Generate regular market news
+        companies_str = ", ".join([f"{name} ({ticker})" for ticker, name in list(ticker_to_name.items())[:5]])
+        prompt = f"""Generate {count} realistic financial news headlines for Indian companies: {companies_str}.
+
+Create diverse news covering:
+- Quarterly earnings (positive/negative)
+- Market movements
+- Business expansions
+- Regulatory updates
+- Industry trends
+
+For EACH news item, classify sentiment as positive, negative, or neutral with a confidence score (0-1).
+
+Respond in this exact JSON array format:
+[
+  {{
+    "ticker": "TCS.NS",
+    "headline": "[Realistic headline]",
+    "summary": "[1-2 sentence summary]",
+    "sentiment": "positive|negative|neutral",
+    "confidence": 0.XX
+  }}
+]"""
+    
+    try:
+        response = llm_client.chat.completions.create(
+            model="Qwen/Qwen2.5-Coder-32B-Instruct",
+            messages=[
+                {"role": "system", "content": "You are a financial news generator for Indian markets. Generate realistic, professional news in JSON format only."},
+                {"role": "user", "content": prompt}
+            ],
+            temperature=0.8,
+            max_tokens=1500
+        )
+        
+        content = response.choices[0].message.content.strip()
+        
+        # Extract JSON from response
+        if '```json' in content:
+            content = content.split('```json')[1].split('```')[0].strip()
+        elif '```' in content:
+            content = content.split('```')[1].split('```')[0].strip()
+        
+        news_data = json.loads(content)
+        
+        if is_default:
+            # Single breaking news item
+            return [{
+                "ticker": default_ticker,
+                "company_name": default_company,
+                "headline": news_data["headline"],
+                "summary": news_data["summary"],
+                "sentiment": "negative",
+                "confidence": news_data.get("confidence", 0.95),
+                "is_breaking": True
+            }]
+        else:
+            # Multiple news items
+            news_items = []
+            for item in news_data[:count]:
+                ticker = item.get("ticker", tickers[0])
+                news_items.append({
+                    "ticker": ticker,
+                    "company_name": ticker_to_name.get(ticker, ticker.replace('.NS', '')),
+                    "headline": item["headline"],
+                    "summary": item.get("summary", ""),
+                    "sentiment": item["sentiment"],
+                    "confidence": item.get("confidence", 0.75),
+                    "is_breaking": False
+                })
+            return news_items
+            
+    except Exception as e:
+        logger.error(f"News generation failed: {e}")
+        # Fallback to template news
+        if is_default:
+            return [{
+                "ticker": default_ticker,
+                "company_name": default_company,
+                "headline": f"BREAKING: {default_company} Faces Severe Liquidity Crisis",
+                "summary": f"{default_company} has declared inability to meet short-term obligations amid market stress. Regulators have been notified.",
+                "sentiment": "negative",
+                "confidence": 0.90,
+                "is_breaking": True
+            }]
+        else:
+            return [
+                {
+                    "ticker": ticker,
+                    "company_name": ticker_to_name.get(ticker, ticker.replace('.NS', '')),
+                    "headline": f"{ticker_to_name.get(ticker, ticker.replace('.NS', ''))} Reports Stable Quarter",
+                    "summary": "Company performance in line with market expectations.",
+                    "sentiment": "neutral",
+                    "confidence": 0.70,
+                    "is_breaking": False
+                }
+                for ticker in tickers[:count]
+            ]
+
+@app.post("/news/generate", response_model=NewsGenerateResponse)
+def generate_news(request: NewsGenerateRequest):
+    """Generate realistic financial news feed for given tickers."""
+    
+    news_data = generate_news_with_llm(request.tickers, request.count)
+    
+    news_items = []
+    for idx, item in enumerate(news_data):
+        news_items.append(NewsItem(
+            id=f"news-{datetime.now().timestamp()}-{idx}",
+            ticker=item["ticker"],
+            company_name=item["company_name"],
+            headline=item["headline"],
+            summary=item["summary"],
+            sentiment=item["sentiment"],
+            confidence=item["confidence"],
+            timestamp=datetime.now().isoformat(),
+            is_breaking=False
+        ))
+    
+    return NewsGenerateResponse(news=news_items)
+
+@app.post("/news/default", response_model=NewsDefaultResponse)
+def generate_default_news(request: NewsDefaultRequest):
+    """Generate breaking news for bank default event."""
+    
+    news_data = generate_news_with_llm(
+        [request.ticker],
+        1,
+        is_default=True,
+        default_ticker=request.ticker,
+        default_company=request.company_name,
+        default_magnitude=request.default_magnitude
+    )
+    
+    item = news_data[0]
+    
+    return NewsDefaultResponse(
+        news=NewsItem(
+            id=f"breaking-{datetime.now().timestamp()}",
+            ticker=item["ticker"],
+            company_name=item["company_name"],
+            headline=item["headline"],
+            summary=item["summary"],
+            sentiment="negative",
+            confidence=item["confidence"],
+            timestamp=datetime.now().isoformat(),
+            is_breaking=True
+        )
+    )

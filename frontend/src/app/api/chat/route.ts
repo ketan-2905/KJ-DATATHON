@@ -8,7 +8,60 @@ const client = new OpenAI({
 
 export async function POST(req: Request) {
     try {
-        const { message, currentGraph } = await req.json();
+        const { message, currentGraph, isAgentMode } = await req.json();
+
+        // Agent Mode Auto-Simulation Detection
+        const isAutoSimPrompt = message.toLowerCase().includes('hdfcbank') &&
+            message.toLowerCase().includes('icicibank') &&
+            message.toLowerCase().includes('kotakbank') &&
+            message.toLowerCase().includes('sbin');
+
+        if (isAgentMode && isAutoSimPrompt) {
+            // Auto-generate structured response for the simulation
+            const response = {
+                type: 'add_nodes',
+                nodes: [
+                    {
+                        label: 'HDFC Bank',
+                        data: {
+                            label: 'HDFC Bank',
+                            type: 'Bank',
+                            details: 'NSE - HDFCBANK',
+                            ticker: 'HDFCBANK.NS'
+                        }
+                    },
+                    {
+                        label: 'ICICI Bank',
+                        data: {
+                            label: 'ICICI Bank',
+                            type: 'Bank',
+                            details: 'NSE - ICICIBANK',
+                            ticker: 'ICICIBANK.NS'
+                        }
+                    },
+                    {
+                        label: 'Kotak Bank',
+                        data: {
+                            label: 'Kotak Mahindra Bank',
+                            type: 'Bank',
+                            details: 'NSE - KOTAKBANK',
+                            ticker: 'KOTAKBANK.NS'
+                        }
+                    },
+                    {
+                        label: 'SBI',
+                        data: {
+                            label: 'State Bank of India',
+                            type: 'Bank',
+                            details: 'NSE - SBIN',
+                            ticker: 'SBIN.NS'
+                        }
+                    }
+                ],
+                message: '✅ Agent Mode: Added HDFC Bank, ICICI Bank, Kotak Mahindra Bank, and State Bank of India to the canvas. Connect them to the CCP node and click "Run Analysis" to start the simulation.'
+            };
+            return NextResponse.json(response);
+        }
 
         const systemPrompt = `
 You are a specialized Financial Network Architect AI. 
@@ -18,6 +71,7 @@ Current Graph State:
 - Node Count: ${currentGraph.nodes.length}
 - Edge Count: ${currentGraph.edges.length}
 - Existing Node IDs: ${currentGraph.nodes.map((n: any) => n.id).join(', ')}
+${isAgentMode ? '\n**AGENT MODE ACTIVE**: You have enhanced capabilities to automatically execute multi-step workflows.' : ''}
 
 Your Task:
 Interpret the user's natural language request to MODIFIY the graph.
@@ -41,6 +95,13 @@ CRITICAL RULES:
    - You MUST generate 'x' and 'y' coordinates for new nodes. 
    - Try to arrange them in a circle around the center (400, 300) or in a grid if many.
    - Do not place them all at (0,0).
+${isAgentMode ? `
+5. **AGENT MODE SPECIAL INSTRUCTIONS**:
+   - When user mentions specific tickers (e.g., HDFCBANK.NS, ICICIBANK.NS), create nodes with proper ticker data
+   - Include ticker field in node data: { "ticker": "SYMBOL.NS" }
+   - Format details as: "NSE - SYMBOL"
+   - Be proactive and execute complete workflows automatically
+` : ''}
 
 User Request: "${message}"
 `;
